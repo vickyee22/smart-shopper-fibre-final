@@ -15,39 +15,6 @@ INDEX_NAME = "smartshopper-index"
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-def fetch_clarification_question(intent, sub_status, step):
-    query = {
-        "size": 1,
-        "query": {
-            "bool": {
-                "must": [
-                    {"term": {"metadata.intent": intent}},
-                    {"term": {"metadata.sub_status": sub_status}},
-                    {"term": {"metadata.sequence": step + 1}}
-                ]
-            }
-        }
-    }
-
-    res = requests.get(
-        f"{OPENSEARCH_HOST}/clarifications/_search",
-        auth=(OPENSEARCH_USER, OPENSEARCH_PASS),
-        headers={"Content-Type": "application/json"},
-        json=query
-    )
-
-    if res.status_code != 200:
-        print(f"[DEBUG] Clarification fetch failed: {res.status_code}")
-        return None
-
-    hits = res.json().get("hits", {}).get("hits", [])
-    if not hits:
-        print("[DEBUG] No clarification question found.")
-        return None
-
-    return hits[0]["_source"]["text"]
-
-
 def detect_emotion(text):
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -203,12 +170,6 @@ def chat(message, history):
     primary = context["primary"]
     sub_status = context["sub_status"]
     questions = CLARIFICATION_QUESTIONS[primary][sub_status]
-    question = fetch_clarification_question(primary, sub_status, step)
-    if not question:
-        print('[DEBUG] No more clarification questions.')
-        return {"role": "assistant", "content": "Thanks! Let me summarize your needs and recommend a suitable plan."}
-    context["step"] += 1
-    return {"role": "assistant", "content": question}
     context["step"] += 1
 
     if context["step"] < len(questions):

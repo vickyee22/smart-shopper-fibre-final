@@ -1,0 +1,12 @@
+{"text": "What's the size of your home or number of rooms?", "metadata": {"intent": "fibre", "sub_status": "new_line", "sequence": 1, "emotion": "any"}}
+{"text": "How many people will be using the internet at home?", "metadata": {"intent": "fibre", "sub_status": "new_line", "sequence": 2, "emotion": "any"}}
+{"text": "Are you a heavy user for gaming or streaming?", "metadata": {"intent": "fibre", "sub_status": "new_line", "sequence": 3, "emotion": "any"}}
+{"text": "Are you experiencing issues with your current fibre plan?", "metadata": {"intent": "fibre", "sub_status": "recontract", "sequence": 1, "emotion": "any"}}
+{"text": "Do you need faster speed or better stability?", "metadata": {"intent": "fibre", "sub_status": "recontract", "sequence": 2, "emotion": "any"}}
+{"text": "Would you like to bundle with other services for more value?", "metadata": {"intent": "fibre", "sub_status": "recontract", "sequence": 3, "emotion": "any"}}
+{"text": "How much data do you need per month?", "metadata": {"intent": "mobile", "sub_status": "new_line", "sequence": 1, "emotion": "any"}}
+{"text": "Do you prefer a contract or no contract?", "metadata": {"intent": "mobile", "sub_status": "new_line", "sequence": 2, "emotion": "any"}}
+{"text": "What\u2019s your monthly budget?", "metadata": {"intent": "mobile", "sub_status": "new_line", "sequence": 3, "emotion": "any"}}
+{"text": "Are you looking to recontract with or without a new phone?", "metadata": {"intent": "mobile", "sub_status": "recontract", "sequence": 1, "emotion": "any"}}
+{"text": "Has your data or usage needs changed?", "metadata": {"intent": "mobile", "sub_status": "recontract", "sequence": 2, "emotion": "any"}}
+{"text": "What\u2019s your priority: price, more data, or phone upgrade?", "metadata": {"intent": "mobile", "sub_status": "recontract", "sequence": 3, "emotion": "any"}}

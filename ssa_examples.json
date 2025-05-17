@@ -1,0 +1,3 @@
+{"text": "My broadband is expensive", "metadata": {"intent": "fibre", "emotion": "frustration", "response_prompt": "Let’s find a better plan. Are you with Singtel or another provider?"}}
+{"text": "I need a lot of mobile data", "metadata": {"intent": "mobile", "emotion": "need", "response_prompt": "Got it. Do you prefer a contract or no contract?"}}
+{"text": "hello", "metadata": {"intent": "unknown", "type": "salutation", "response_prompt": "Hi! How can I help you with Singtel plans today?"}}

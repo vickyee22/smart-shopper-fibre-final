@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-05-18T23:40:19.718936",
+  "user_profile": {
+    "plan_type": "fibre",
+    "fibre": {
+      "home_size": "5-room",
+      "postal_code_prefix": "609601"
+    }
+  },
+  "answers": [
+    "Hi",
+    "broadband",
+    "new plan",
+    "5"
+  ],
+  "final_recommendation": "We recommend the **5Gbps Enhanced (WiFi 7) Plan**.\n\ud83d\udcb0 Monthly Price: $49.9\n\ud83d\udcc4 Contract: 24 months contract\n\ud83c\udf81 Includes: no additional perks\n\ud83d\udc49 Learn more: https://singtel.com/fibre-plans",
+  "summary": "User is interested in broadband and looking for a new plan. Based on their profile (5-room home, postal code prefix 609601), recommend the **5Gbps Enhanced (WiFi 7) Plan** priced at $49.9/month for a 24-month contract with no additional perks included. Direct them to learn more at: https://singtel.com/fibre-plans."
+}

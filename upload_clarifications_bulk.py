@@ -10,7 +10,10 @@ OPENSEARCH_PASS = os.getenv("OPENSEARCH_PASS")
 
 INDEX_MAP = {
     "clarifications_poc.json": "clarifications-poc",
-    "clarifications_ssa.json": "clarifications-ssa"
+    "clarifications_ssa.json": "clarifications-ssa",
+    "fibre_recommendation_matrix_ssa.json": "fibre-recommendation-ssa",
+    "mobile_recommendation_matrix_ssa.json": "mobile-recommendation-ssa",
+    "BTL_Offers.json": "fibre-offers-ssa"
 }
 
 for bulk_file, index_name in INDEX_MAP.items():

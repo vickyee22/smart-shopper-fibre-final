@@ -60,23 +60,22 @@ def update_profile_fields(message, existing_profile):
         "Extract these fields from the user's message:\n"
         "- plan_type: fibre or mobile\n"
         "- current_provider: singtel or other (e.g., Starhub, M1, Circles are other)\n"
-        "- relationship_status: new_line or recontract\n"
-        "- home_size: e.g., 3-room, 4-room, 5-room\n"
-        "- postal_code_prefix: a 6-digit postal code\n\n"
+        "- relationship_status: new_line or recontract\n\n"
         "Return a JSON object with only the fields detected in this message. "
         "Ignore anything unrelated. Do not guess."
     )
 
     prompt = f"User said: \"{message}\"\n\nExisting profile: {json.dumps(existing_profile)}"
 
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ]
-        )
         extracted = json.loads(response.choices[0].message.content)
         print(f"[DEBUG] Extracted profile fields: {extracted}")
         return extracted
@@ -87,7 +86,7 @@ def update_profile_fields(message, existing_profile):
             "content": "Sorry, something went wrong while processing your request."
         }
         log_interaction(message, reply, context["profile"])
-        return {}
+        return reply
 
 def fetch_clarification_question(intent, sub_status, step):
     query = {
@@ -238,22 +237,7 @@ def chat(message, history):
 
     print(f"[PROFILE TRACKER] Profile before update: {context['profile']}")
     updated = update_profile_fields(message, context["profile"])
-    # Nest fibre-related profile fields under "fibre" key if plan_type is "fibre"
-    if updated.get("plan_type") == "fibre":
-        context["profile"]["plan_type"] = "fibre"
-        if "fibre" not in context["profile"]:
-            context["profile"]["fibre"] = {}
-        for key in ["relationship_status", "postal_code_prefix", "home_size"]:
-            if key in updated:
-                context["profile"]["fibre"][key] = updated[key]
-    elif context["profile"].get("plan_type") == "fibre":
-        if "fibre" not in context["profile"]:
-            context["profile"]["fibre"] = {}
-        for key in ["relationship_status", "postal_code_prefix", "home_size"]:
-            if key in updated:
-                context["profile"]["fibre"][key] = updated[key]
-    else:
-        context["profile"].update(updated)
+    context["profile"].update(updated)
     print(f"[PROFILE TRACKER] Profile after update: {context['profile']}")
 
     # Fetch clarification question from vector DB
@@ -276,107 +260,6 @@ def chat(message, history):
 
     reply = {"role": "assistant", "content": "Thanks! Based on your responses, I’ll help find the most suitable Singtel plan for you."}
     log_interaction(message, reply, context.get("profile", {}))
-
-    # Recommendation logic
-    try:
-        # Fetch fibre recommendation matrix from OpenSearch
-        try:
-            res = requests.get(
-                f"{OPENSEARCH_HOST}/fibre-recommendation-ssa/_search",
-                auth=(OPENSEARCH_USER, OPENSEARCH_PASS),
-                headers={"Content-Type": "application/json"},
-                json={"size": 1000}
-            )
-            hits = res.json().get("hits", {}).get("hits", [])
-            fibre_matrix = [hit["_source"] for hit in hits]
-        except Exception as e:
-            print(f"[ERROR] Failed to fetch fibre recommendation matrix from OpenSearch: {e}")
-            fibre_matrix = []
-
-        # [DEBUG] Print all loaded offers from OpenSearch
-        print("[DEBUG] Offers loaded from OpenSearch:")
-        for offer in fibre_matrix:
-            print(f" - {offer.get('offerId')}, intent={offer.get('intent')}, rs={offer.get('relationship_status')}, hs={offer.get('home_size')}, pc={offer.get('postal_code_prefix')}")
-
-        # Fetch offer details from OpenSearch
-        try:
-            res = requests.get(
-                f"{OPENSEARCH_HOST}/fibre-offers-ssa/_search",
-                auth=(OPENSEARCH_USER, OPENSEARCH_PASS),
-                headers={"Content-Type": "application/json"},
-                json={"size": 1000}
-            )
-            hits = res.json().get("hits", {}).get("hits", [])
-            offer_details = [hit["_source"] for hit in hits]
-        except Exception as e:
-            print(f"[ERROR] Failed to fetch offer details from OpenSearch: {e}")
-            offer_details = []
-
-        profile = context.get("profile", {})
-        # [DEBUG] Print profile used for matching
-        print(f"[DEBUG] Profile used for matching: {profile}")
-        matched_offer = None
-        fallback_offer = None
-
-        def is_match(expected, actual):
-            return expected == "any" or actual == expected or (expected and actual and expected in actual)
-
-        for offer in fibre_matrix:
-            # Use fallback logic for relationship_status
-            rs = profile.get("fibre", {}).get("relationship_status") or profile.get("relationship_status")
-            # Normalize relationship_status for compatibility with matrix values
-            if rs == "new_line":
-                rs = "new"
-            elif rs == "recontract":
-                rs = "recontract"
-            hs = profile.get("fibre", {}).get("home_size")
-            pc = profile.get("fibre", {}).get("postal_code_prefix")
-            print(f"[DEBUG] Checking offer {offer['offerId']}:")
-            print(f"  intent match: {offer['intent']} == fibre")
-            print(f"  rs match: {offer['relationship_status']} vs {rs} => {is_match(offer['relationship_status'], rs)}")
-            print(f"  hs match: {offer['home_size']} vs {hs} => {is_match(offer['home_size'], hs)}")
-            print(f"  pc match: {offer['postal_code_prefix']} vs {pc} => {is_match(offer['postal_code_prefix'], pc)}")
-            if (
-                offer["intent"] == "fibre"
-                and is_match(offer["relationship_status"], rs)
-                and is_match(offer["home_size"], hs)
-                and is_match(offer["postal_code_prefix"], pc)
-            ):
-                matched_offer = offer
-                break
-            else:
-                print(f"[DEBUG] Skipping {offer['offerId']} - mismatch: "
-                      f"rs={offer['relationship_status']} vs {rs}, "
-                      f"hs={offer['home_size']} vs {hs}, "
-                      f"pc={offer['postal_code_prefix']} vs {pc}")
-            if offer["offerId"] == "b10":  # fallback
-                fallback_offer = offer
-
-        if not matched_offer and fallback_offer:
-            matched_offer = fallback_offer
-
-        if matched_offer:
-            print(f"[DEBUG] Matched offer ID: {matched_offer['offerId']}")
-            print(f"[DEBUG] Offer details lookup from OpenSearch:")
-            for item in offer_details:
-                print(f" - {item.get('offerId')} ({item.get('plan_name')})")
-
-            plan_info = next((item for item in offer_details if item["offerId"] == matched_offer["offerId"]), {})
-            print(f"[DEBUG] Final matched plan details: {plan_info}")
-            addons = plan_info.get("addons", [])
-            top_addons = ", ".join(addons[:2]) if addons else "no additional perks"
-
-            recommendation = (
-                f"We recommend the **{plan_info.get('Plan Name', 'a suitable plan')}**.\n"
-                f"💰 Monthly Price: ${plan_info.get('Monthly price', 'N/A')}\n"
-                f"📄 Contract: {plan_info.get('Contract policy', 'N/A')}\n"
-                f"🎁 Includes: {top_addons}\n"
-                f"👉 Learn more: {matched_offer['link']}"
-            )
-            reply = {"role": "assistant", "content": recommendation}
-    except Exception as e:
-        print(f"[ERROR] Failed to generate recommendation: {e}")
-        reply = {"role": "assistant", "content": "Thanks! Based on your responses, I’ll help find the most suitable Singtel plan for you."}
 
     # Save conversation summary for agent handoff
     try:
@@ -414,6 +297,39 @@ def chat(message, history):
             json.dump(summary_entry, f, indent=2)
     except Exception as e:
         print(f"[ERROR] Failed to write handoff summary: {e}")
+
+    # Recommendation logic
+    try:
+        with open("fibre_recommendation_matrix_ssa.json") as f:
+            fibre_matrix = json.load(f)
+        with open("BTL_Offers.json") as f:
+            offer_details = json.load(f)
+
+        profile = context.get("profile", {})
+        matched_offer = None
+        fallback_offer = None
+
+        for offer in fibre_matrix:
+            if (
+                offer["intent"] == "fibre"
+                and (offer["relationship_status"] == profile.get("relationship_status") or offer["relationship_status"] == "any")
+                and (offer["home_size"] == profile.get("home_size") or offer["home_size"] == "any")
+                and (offer["postal_code_prefix"] == profile.get("postal_code_prefix") or offer["postal_code_prefix"] == "any")
+            ):
+                matched_offer = offer
+                break
+            if offer["offerId"] == "10":  # fallback
+                fallback_offer = offer
+
+        if not matched_offer and fallback_offer:
+            matched_offer = fallback_offer
+
+        if matched_offer:
+            plan_info = next((item for item in offer_details if item["offerId"] == matched_offer["offerId"]), {})
+            recommendation = f"We recommend the {matched_offer['plan_name']}.\n{matched_offer['highlight']}\nLearn more: {matched_offer['link']}"
+            reply = {"role": "assistant", "content": recommendation}
+    except Exception as e:
+        print(f"[ERROR] Failed to generate recommendation: {e}")
 
     return reply
 

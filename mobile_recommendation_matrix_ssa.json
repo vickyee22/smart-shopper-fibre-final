@@ -1,0 +1,14 @@
+{ "index": { "_index": "mobile-recommendation-ssa" } }
+{ "offerId": "mob-1", "intent": "fibre", "relationship_status": "port-in", "home_size": "5-room", "postal_code_prefix": "238863", "plan_name": "3Gbps Enhanced Plan", "highlight": "Includes BE11000 router, 500MB Mobile Broadband, yuu Points, and 12 months Disney+", "link": "https://singtel.com/fibre-plans", "rank": 1 }
+{ "index": { "_index": "mobile-recommendation-ssa" } }
+{ "offerId": "mob-2", "intent": "fibre", "relationship_status": "new", "home_size": "4-room", "postal_code_prefix": "529536", "plan_name": "5Gbps Enhanced Plan", "highlight": "5Gbps speed, AX5400 router, $50 yuu Points, 12 months Disney+, Amazon Prime", "link": "https://singtel.com/fibre-plans", "rank": 2 }
+{ "index": { "_index": "mobile-recommendation-ssa" } }
+{ "offerId": "mob-4", "intent": "fibre", "relationship_status": "new", "home_size": "5-room", "postal_code_prefix": "609601", "plan_name": "10Gbps Enhanced Plan", "highlight": "10Gbps speed, BE22000 router, full premium bundle with streaming & protection", "link": "https://singtel.com/fibre-plans", "rank": 3 }
+{ "index": { "_index": "mobile-recommendation-ssa" } }
+{ "offerId": "mob-5", "intent": "fibre", "relationship_status": "port-in", "home_size": "5-room", "postal_code_prefix": "545078", "plan_name": "10Gbps Enhanced Plan", "highlight": "Same speed & perks as new but tailored for port-in customers", "link": "https://singtel.com/fibre-plans", "rank": 4 }
+{ "index": { "_index": "mobile-recommendation-ssa" } }
+{ "offerId": "mob-6", "intent": "fibre", "relationship_status": "new", "home_size": "3-room", "postal_code_prefix": "409051", "plan_name": "3Gbps Mesh (WiFi 7) Plan", "highlight": "2x BE11000 routers for full mesh coverage, ideal for smaller homes", "link": "https://singtel.com/fibre-plans", "rank": 5 }
+{ "index": { "_index": "mobile-recommendation-ssa" } }
+{ "offerId": "mob-9", "intent": "fibre", "relationship_status": "port-in", "home_size": "4-room", "postal_code_prefix": "238164", "plan_name": "5Gbps Enhanced (WiFi 7) Plan", "highlight": "High-speed mesh with off-contract perks and media subscriptions", "link": "https://singtel.com/fibre-plans", "rank": 6 }
+{ "index": { "_index": "mobile-recommendation-ssa" } }
+{ "offerId": "mob-10", "intent": "fibre", "relationship_status": "any", "home_size": "any", "postal_code_prefix": "any", "plan_name": "Default Fibre Plan", "highlight": "Reliable high-speed internet for general households.", "link": "https://singtel.com/fibre-plans", "rank": 7 }

@@ -1,5 +1,5 @@
-{"timestamp": "2025-05-18T20:55:43.786540", "user_input": "Hi", "assistant_reply": "Hi there! I\u2019m here to help you find the best Singtel broadband or mobile plan. What are you looking for today?", "profile": {}}
-{"timestamp": "2025-05-18T20:55:48.926427", "user_input": "mobile", "assistant_reply": "Are you signing up for a new line or porting in from another telco?", "profile": {}}
-{"timestamp": "2025-05-18T20:55:52.896876", "user_input": "port in", "assistant_reply": "How much data do you typically use per month?", "profile": {}}
-{"timestamp": "2025-05-18T20:55:57.177732", "user_input": "20gb", "assistant_reply": "What\u2019s your monthly budget for a mobile plan?", "profile": {}}
-{"timestamp": "2025-05-18T20:56:09.981579", "user_input": "10 dollars", "assistant_reply": "Thanks! Based on your responses, I\u2019ll help find the most suitable Singtel plan for you.", "profile": {}}
+{"timestamp": "2025-05-18T23:39:56.380042", "user_input": "Hi", "assistant_reply": "Hi there! I\u2019m here to help you find the best Singtel broadband or mobile plan. What are you looking for today?", "profile": {}}
+{"timestamp": "2025-05-18T23:40:03.157551", "user_input": "broadband", "assistant_reply": "Are you signing up for a new fibre plan or switching from another provider?", "profile": {"plan_type": "fibre", "fibre": {}}}
+{"timestamp": "2025-05-18T23:40:07.766741", "user_input": "new plan", "assistant_reply": "What's the size of your home or number of rooms?", "profile": {"plan_type": "fibre", "fibre": {}}}
+{"timestamp": "2025-05-18T23:40:10.257645", "user_input": "5", "assistant_reply": "May I have your postal code to check available services?", "profile": {"plan_type": "fibre", "fibre": {"home_size": "5-room"}}}
+{"timestamp": "2025-05-18T23:40:18.032308", "user_input": "609601", "assistant_reply": "Thanks! Based on your responses, I\u2019ll help find the most suitable Singtel plan for you.", "profile": {"plan_type": "fibre", "fibre": {"home_size": "5-room", "postal_code_prefix": "609601"}}}

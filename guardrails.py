@@ -28,6 +28,8 @@ def is_salutation(message):
     prompt = f"""
 Determine if the following message is just a salutation or casual greeting, like 'hello', 'hi', or 'good morning', with no real intent to explore Singtel broadband or mobile plans.
 
+Only reply "yes" if the message is clearly just a standalone greeting — not if it mentions telcos, plans, or account status.
+
 Respond with only "yes" or "no".
 
 Message: "{message}"

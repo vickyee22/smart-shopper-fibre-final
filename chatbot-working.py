@@ -250,14 +250,13 @@ def chat(message, history):
     primary = context["primary"]
     missing = [k for k, v in context["profile"].items() if v is None]
     if missing:
-    # if not context["primary"] and not any(context["profile"].values()):
         print(f"[PROFILE TRACKER] Profile before update: {context['profile']}")
         updates = update_profile_fields(message, context["profile"])
         print(f"[DEBUG] Extracted profile fields: {updates}")
         context["profile"].update(updates)
         print(f"[PROFILE TRACKER] Profile after update: {context['profile']}")
 
-        if context["profile"]["plan_type"]:
+        if context["profile"]["plan_type"] and not context["primary"]:
             context["primary"] = context["profile"]["plan_type"]
         if context["profile"]["relationship_status"]:
             context["sub_status"] = context["profile"]["relationship_status"]
@@ -266,54 +265,62 @@ def chat(message, history):
         print(f"[PROFILE TRACKER] Profile after update: {context['profile']}")
 
         # Check which profile fields are still missing
-        missing = [k for k, v in context["profile"].items() if v is None]
-
         if "plan_type" in missing:
-            return {
+            reply = {
                 "role": "assistant",
                 "content": "Are you looking for a broadband (fibre) plan or a mobile plan?"
             }
+            log_interaction(message, reply, context["profile"])
+            return reply
 
         if "current_provider" in missing:
-            return {
+            reply = {
                 "role": "assistant",
                 "content": "Are you currently with Singtel or switching from another provider?"
             }
+            log_interaction(message, reply, context["profile"])
+            return reply
 
         if "relationship_status" in missing:
-            return {
+            reply = {
                 "role": "assistant",
                 "content": "Are you signing up for a new line or recontracting an existing plan?"
             }
+            log_interaction(message, reply, context["profile"])
+            return reply
 
         print(f"[DEBUG] Updated profile: {context['profile']}")
-        
-        print("[DEBUG] No primary intent yet. Checking off-topic...")
-        primary = detect_primary_intent_vector(message)
-        print(f"[DEBUG] Initial vector intent: {primary}")
-        print(f"[DEBUG] Ready to clarify intent using GPT...")
-        primary = clarify_intent_with_llm(message, primary)
-        print(f"[DEBUG] Final intent after clarify_intent_with_llm: {primary}")
-        print(f"[DEBUG] Final intent after LLM clarification: {primary}")
-        if primary == "unknown" and not context["primary"]:
-            reply = {
-                "role": "assistant",
-                "content": "Got it. Are you referring to a broadband (fibre) plan or a mobile plan?"
-            }
-            log_interaction(message, reply, context['profile'])
-            return reply
-                
-        if primary == "unknown":
-            if is_off_topic(message):
-                print("[DEBUG] Detected off-topic, exiting.")
+
+        if not missing:
+            print("[DEBUG] Profile complete. Skipping intent classification.")
+        else:
+            print("[DEBUG] No primary intent yet. Checking off-topic...")
+            primary = detect_primary_intent_vector(message)
+            print(f"[DEBUG] Initial vector intent: {primary}")
+            print(f"[DEBUG] Ready to clarify intent using GPT...")
+            primary = clarify_intent_with_llm(message, primary)
+            print(f"[DEBUG] Final intent after clarify_intent_with_llm: {primary}")
+            print(f"[DEBUG] Final intent after LLM clarification: {primary}")
+
+            if primary == "unknown" and not context["primary"]:
                 reply = {
                     "role": "assistant",
-                    "content": "Apologies, I'm here specifically to help you explore Singtel broadband and mobile plans. Let me know how I can assist with that!"
+                    "content": "Got it. Are you referring to a broadband (fibre) plan or a mobile plan?"
                 }
                 log_interaction(message, reply, context['profile'])
                 return reply
 
-        context["primary"] = primary
+            if primary == "unknown":
+                if is_off_topic(message):
+                    print("[DEBUG] Detected off-topic, exiting.")
+                    reply = {
+                        "role": "assistant",
+                        "content": "Apologies, I'm here specifically to help you explore Singtel broadband and mobile plans. Let me know how I can assist with that!"
+                    }
+                    log_interaction(message, reply, context['profile'])
+                    return reply
+
+            context["primary"] = primary
 
         emotion = detect_emotion(message).strip().lower()
         print(f"[DEBUG] Detected emotion: {emotion}")
@@ -330,8 +337,8 @@ def chat(message, history):
             "content": f"{tone} Are you currently with Singtel or switching from another provider?"
         }
         log_interaction(message, reply, context['profile'])
-        return reply
-            
+        # NOTE: Do not return here; proceed to clarification questions block below
+
     # Clarify if user is recontracting or new
     print(f"[DEBUG] Telco clarification not done yet. User message: {message}")
     if not context["sub_status"]:
@@ -346,19 +353,18 @@ def chat(message, history):
     step = context["step"]
     primary = context["primary"]
     sub_status = context["sub_status"]
-    # Gather Q/A pairs to avoid repeating questions already answered
-    qa_pairs = [
-        (history[i]["content"], history[i+1]["content"])
-        for i in range(len(history) - 1)
-        if history[i]["role"] == "assistant" and history[i+1]["role"] == "user"
-    ]
-    asked_questions = [q.strip("?") for q, _ in qa_pairs]
+    # Gather asked questions to avoid repeating questions already answered
+    asked_questions = set()
+    for i in range(len(history) - 1):
+        if history[i]["role"] == "assistant" and history[i+1]["role"] == "user":
+            question = history[i]["content"].strip().lower().rstrip("?")
+            asked_questions.add(question)
 
     while True:
         question = fetch_clarification_question(primary, sub_status, step)
         if not question:
             break
-        if question.strip("?") not in asked_questions:
+        if question.strip().lower().rstrip("?") not in asked_questions:
             context["step"] = step + 1
             reply = {"role": "assistant", "content": question}
             log_interaction(message, reply, context["profile"])

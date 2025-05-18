@@ -44,4 +44,3 @@ Message: "{message}"
     except Exception as e:
         print(f"[Guardrails Error - Salutation]: {e}")
         return False
-

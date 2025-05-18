@@ -1,0 +1,12 @@
+{ "index": { "_index": "clarifications-ssa" } }
+{"text": "Are you signing up for a new fibre plan or switching from another provider?", "metadata": {"intent": "fibre", "sub_status": "new_line", "sequence": 1, "emotion": "any"}}
+{ "index": { "_index": "clarifications-ssa" } }
+{"text": "What's the size of your home or number of rooms?", "metadata": {"intent": "fibre", "sub_status": "new_line", "sequence": 2, "emotion": "any"}}
+{ "index": { "_index": "clarifications-ssa" } }
+{"text": "May I have your postal code to check available services?", "metadata": {"intent": "fibre", "sub_status": "new_line", "sequence": 3, "emotion": "any"}}
+{ "index": { "_index": "clarifications-ssa" } }
+{"text": "Are you signing up for a new line or porting in from another telco?", "metadata": {"intent": "mobile", "sub_status": "new_line", "sequence": 1, "emotion": "any"}}
+{ "index": { "_index": "clarifications-ssa" } }
+{"text": "How much data do you typically use per month?", "metadata": {"intent": "mobile", "sub_status": "new_line", "sequence": 2, "emotion": "any"}}
+{ "index": { "_index": "clarifications-ssa" } }
+{"text": "What’s your monthly budget for a mobile plan?", "metadata": {"intent": "mobile", "sub_status": "new_line", "sequence": 3, "emotion": "any"}}

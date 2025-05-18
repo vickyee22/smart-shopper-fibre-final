@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-05-18T19:58:53.211976",
+  "user_profile": {
+    "plan_type": "fibre",
+    "current_provider": "m1",
+    "relationship_status": "new_line"
+  },
+  "answers": [
+    "new line",
+    "3",
+    "2"
+  ],
+  "final_recommendation": "Hello! It's great to hear that you're looking to set up a new line with Singtel. Based on your requirements of needing 3 new lines and 2GB of data, I would recommend our Combo 3 plan. This plan offers a good balance of data, talktime, and SMS for multiple lines, catering to your needs for 3 new connections. Feel free to check out more details on our website or get in touch with our customer service team for further assistance.",
+  "summary": "User is looking to set up a new line with Singtel, needing 3 new lines and 2GB of data. Recommended plan is Combo 3 for a good balance of data, talktime, and SMS for multiple lines. Suggest checking website for more details or contacting customer service for assistance."
+}

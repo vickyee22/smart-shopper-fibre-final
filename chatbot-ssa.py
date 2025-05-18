@@ -23,7 +23,7 @@ def log_interaction(user_input, assistant_reply, profile):
         "assistant_reply": assistant_reply["content"],
         "profile": profile.copy()
     }
-    with open("interaction_log.jsonl", "a") as f:
+    with open("interaction_log_ssa.json", "a") as f:
         f.write(json.dumps(log_entry) + "\n")
 
 
@@ -103,7 +103,7 @@ def fetch_clarification_question(intent, sub_status, step):
     }
 
     res = requests.get(
-        f"{OPENSEARCH_HOST}/clarifications-poc/_search",
+        f"{OPENSEARCH_HOST}/clarifications-ssa/_search",
         auth=(OPENSEARCH_USER, OPENSEARCH_PASS),
         headers={"Content-Type": "application/json"},
         json=query
@@ -192,195 +192,75 @@ def chat(message, history):
     if user_id not in user_context:
         print("[DEBUG] Initializing new user context")
         user_context[user_id] = {
-        "profile": {
-            "plan_type": None,
-            "current_provider": None,
-            "relationship_status": None
-        },
-        "primary": None,
-        "sub_status": None,
-        "step": 0,
-        "telco_clarified": False
-    }
-        open("interaction_log.jsonl", "w").close()
+            "primary": None,
+            "step": 0
+        }
+        open("interaction_log_ssa.json", "w").close()
         print("[DEBUG] Log reset on context reinitialization.")
-
     context = user_context[user_id]
 
-    # ✅ Salutation check first
+    # Salutation check
     if is_salutation(message):
         reply = {
             "role": "assistant",
             "content": "Hi there! I’m here to help you find the best Singtel broadband or mobile plan. What are you looking for today?"
         }
-        log_interaction(message, reply, context['profile'])
+        log_interaction(message, reply, {})
         return reply
 
-    # Guardrail check
-    primary = context["primary"]
-    missing = [k for k, v in context["profile"].items() if v is None]
-    if missing:
-        print(f"[PROFILE TRACKER] Profile before update: {context['profile']}")
-        updates = update_profile_fields(message, context["profile"])
-        print(f"[DEBUG] Extracted profile fields: {updates}")
-        context["profile"].update(updates)
-
-        if context["profile"]["plan_type"] and not context["primary"]:
-            context["primary"] = context["profile"]["plan_type"]
-        if context["profile"]["relationship_status"]:
-            context["sub_status"] = context["profile"]["relationship_status"]
-        if context["profile"]["current_provider"]:
-            context["telco_clarified"] = True
-        print(f"[PROFILE TRACKER] Profile after update: {context['profile']}")
-
-        # Re-calculate missing after update to prevent re-asking already filled fields
-        missing = [k for k, v in context["profile"].items() if v is None]
-
-        if "plan_type" in missing and not context["primary"]:
+    # Detect or confirm primary intent
+    if context["primary"] is None:
+        intent = detect_primary_intent_vector(message)
+        intent = clarify_intent_with_llm(message, intent)
+        print(f"[DEBUG] Detected intent: {intent}")
+        if intent in ["fibre", "mobile"]:
+            context["primary"] = intent
+        else:
+            if is_off_topic(message):
+                print("[DEBUG] Detected off-topic input.")
+                reply = {
+                    "role": "assistant",
+                    "content": "I'm here to assist with Singtel broadband and mobile plans. Let me know how I can help!"
+                }
+                log_interaction(message, reply, {})
+                return reply
             reply = {
                 "role": "assistant",
                 "content": "Are you looking for a broadband (fibre) plan or a mobile plan?"
             }
-            log_interaction(message, reply, context["profile"])
+            log_interaction(message, reply, {})
             return reply
 
-        if "current_provider" in missing and not context["telco_clarified"]:
-            reply = {
-                "role": "assistant",
-                "content": "Are you currently with Singtel or switching from another provider?"
-            }
-            log_interaction(message, reply, context["profile"])
-            return reply
-
-        if "relationship_status" in missing and not context["sub_status"]:
-            reply = {
-                "role": "assistant",
-                "content": "Are you signing up for a new line or recontracting an existing plan?"
-            }
-            log_interaction(message, reply, context["profile"])
-            return reply
-
-        print(f"[DEBUG] Updated profile: {context['profile']}")
-
-        if not missing:
-            print("[DEBUG] Profile complete. Skipping intent classification.")
-        else:
-            print("[DEBUG] No primary intent yet. Checking off-topic...")
-            primary = detect_primary_intent_vector(message)
-            print(f"[DEBUG] Initial vector intent: {primary}")
-            print(f"[DEBUG] Ready to clarify intent using GPT...")
-            primary = clarify_intent_with_llm(message, primary)
-            print(f"[DEBUG] Final intent after clarify_intent_with_llm: {primary}")
-            print(f"[DEBUG] Final intent after LLM clarification: {primary}")
-
-            if primary == "unknown" and not context["primary"]:
-                reply = {
-                    "role": "assistant",
-                    "content": "Got it. Are you referring to a broadband (fibre) plan or a mobile plan?"
-                }
-                log_interaction(message, reply, context['profile'])
-                return reply
-
-            if primary == "unknown":
-                if is_off_topic(message):
-                    print("[DEBUG] Detected off-topic, exiting.")
-                    reply = {
-                        "role": "assistant",
-                        "content": "Apologies, I'm here specifically to help you explore Singtel broadband and mobile plans. Let me know how I can assist with that!"
-                    }
-                    log_interaction(message, reply, context['profile'])
-                    return reply
-
-            context["primary"] = primary
-
-        emotion = detect_emotion(message).strip().lower()
-        print(f"[DEBUG] Detected emotion: {emotion}")
-
-        if "frustration" in emotion:
-            tone = f"Sorry to hear that! Let's explore better {primary} options for you."
-        elif "positive" in emotion:
-            tone = f"Awesome! Let's help you find the right {primary} plan."
-        else:
-            tone = f"Thanks for sharing. You're looking for {primary} plans."
-
-        reply = {
-            "role": "assistant",
-            "content": f"{tone} Are you currently with Singtel or switching from another provider?"
-        }
-        log_interaction(message, reply, context['profile'])
-        # NOTE: Do not return here; proceed to clarification questions block below
-
-    # Clarify if user is recontracting or new
-    print(f"[DEBUG] Telco clarification not done yet. User message: {message}")
-    if not context["sub_status"]:
-        reply = {
-            "role": "assistant",
-            "content": "Are you signing up for a new line or recontracting an existing plan?"
-        }
-        log_interaction(message, reply, context["profile"])
-        return reply
-
-    # Proceed with clarification questions
+    # Fetch clarification question from vector DB
     step = context["step"]
-    primary = context["primary"]
-    sub_status = context["sub_status"]
-    # Gather asked questions to avoid repeating questions already answered
     asked_questions = set()
     for i in range(len(history) - 1):
         if history[i]["role"] == "assistant" and history[i+1]["role"] == "user":
-            question = history[i]["content"].strip().lower().rstrip("?")
-            asked_questions.add(question)
+            asked_questions.add(history[i]["content"].strip().lower().rstrip("?"))
 
     while True:
-        question = fetch_clarification_question(primary, sub_status, step)
+        question = fetch_clarification_question(context["primary"], "new_line", step)
         if not question:
             break
         if question.strip().lower().rstrip("?") not in asked_questions:
-            context["step"] = step + 1
+            context["step"] += 1
             reply = {"role": "assistant", "content": question}
-            log_interaction(message, reply, context["profile"])
+            log_interaction(message, reply, {})
             return reply
         step += 1
-    else:
-        print('[DEBUG] No more clarification questions.')
 
-    # All questions answered → final recommendation
-    num_questions = context["step"]
-    user_answers = [msg["content"] for msg in history if msg["role"] == "user"][-num_questions:]
-    qna_pairs = "\n\n".join([
-        f"A{i+1}: {user_answers[i]}" for i in range(len(user_answers))
-    ])
-    prompt = (
-        f"A customer answered the following about their {sub_status.replace('_',' ')} {primary} plan needs:\n\n"
-        f"{qna_pairs}\n\n"
-        f"Recommend the most suitable Singtel plan with a short reason."
-    )
-
-    try:
-        with open("prompts.json", "r") as f:
-            system_prompt = json.load(f)["system_prompt"]
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        reply = response.choices[0].message.content.strip()
-        print(f"[DEBUG] Final GPT reply: {reply}")
-
-    except Exception as e:
-        reply = f"Error: {str(e)}"
-
-    print("[DEBUG] Resetting user context")
-    user_context[user_id] = {"primary": None, "sub_status": None, "step": 0, "telco_clarified": False}
-    reply = {"role": "assistant", "content": reply}
-    log_interaction(message, reply, context['profile'])
+    reply = {"role": "assistant", "content": "Thanks! Based on your responses, I’ll help find the most suitable Singtel plan for you."}
+    log_interaction(message, reply, {})
 
     # Save conversation summary for agent handoff
     try:
-        # Generate GPT-based summary of the interaction
+        # Extract all user responses in order
+        user_answers = [msg["content"] for msg in history if msg["role"] == "user"]
+
+        qna_pairs = "\n".join([
+            f"{i+1}. {q}" for i, q in enumerate(user_answers)
+        ])
+
         summary_prompt = (
             f"Summarize this customer conversation in a way that a live sales agent can take over smoothly.\n\n"
             f"User Profile: {json.dumps(context['profile'])}\n\n"
@@ -388,18 +268,14 @@ def chat(message, history):
             f"Final Recommendation: {reply['content']}"
         )
 
-        try:
-            summary_response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant creating handover summaries for customer support."},
-                    {"role": "user", "content": summary_prompt}
-                ]
-            )
-            conversation_summary = summary_response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"[ERROR] Failed to generate conversation summary: {e}")
-            conversation_summary = "Summary unavailable due to error."
+        summary_response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant creating handover summaries for customer support."},
+                {"role": "user", "content": summary_prompt}
+            ]
+        )
+        conversation_summary = summary_response.choices[0].message.content.strip()
 
         summary_entry = {
             "timestamp": datetime.datetime.now().isoformat(),
@@ -408,7 +284,7 @@ def chat(message, history):
             "final_recommendation": reply["content"],
             "summary": conversation_summary
         }
-        with open("handoff_summary.json", "w") as f:
+        with open("handoff_su_ssa.json", "w") as f:
             json.dump(summary_entry, f, indent=2)
     except Exception as e:
         print(f"[ERROR] Failed to write handoff summary: {e}")
@@ -418,6 +294,6 @@ def chat(message, history):
 # Gradio UI
 gr.ChatInterface(
     fn=chat,
-    title="Singtel Smart Shopper Assistant - POC",
+    title="Singtel Smart Shopper Assistant - SSA",
     type="messages"
 ).launch()

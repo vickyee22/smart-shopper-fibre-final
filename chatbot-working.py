@@ -241,10 +241,6 @@ def chat(message, history):
         }
         log_interaction(message, reply, context['profile'])
         return reply
-        
-    print(f"[PROFILE TRACKER] Profile before update: {context['profile']}")
-    # print(f"[Context TRACKER] Primary after update: {primary}")
-    # print(f"[Context TRACKER] Substatus after update: {sub_status}")
 
     # Guardrail check
     primary = context["primary"]
@@ -254,7 +250,6 @@ def chat(message, history):
         updates = update_profile_fields(message, context["profile"])
         print(f"[DEBUG] Extracted profile fields: {updates}")
         context["profile"].update(updates)
-        print(f"[PROFILE TRACKER] Profile after update: {context['profile']}")
 
         if context["profile"]["plan_type"] and not context["primary"]:
             context["primary"] = context["profile"]["plan_type"]
@@ -264,8 +259,10 @@ def chat(message, history):
             context["telco_clarified"] = True
         print(f"[PROFILE TRACKER] Profile after update: {context['profile']}")
 
-        # Check which profile fields are still missing
-        if "plan_type" in missing:
+        # Re-calculate missing after update to prevent re-asking already filled fields
+        missing = [k for k, v in context["profile"].items() if v is None]
+
+        if "plan_type" in missing and not context["primary"]:
             reply = {
                 "role": "assistant",
                 "content": "Are you looking for a broadband (fibre) plan or a mobile plan?"
@@ -273,7 +270,7 @@ def chat(message, history):
             log_interaction(message, reply, context["profile"])
             return reply
 
-        if "current_provider" in missing:
+        if "current_provider" in missing and not context["telco_clarified"]:
             reply = {
                 "role": "assistant",
                 "content": "Are you currently with Singtel or switching from another provider?"
@@ -281,7 +278,7 @@ def chat(message, history):
             log_interaction(message, reply, context["profile"])
             return reply
 
-        if "relationship_status" in missing:
+        if "relationship_status" in missing and not context["sub_status"]:
             reply = {
                 "role": "assistant",
                 "content": "Are you signing up for a new line or recontracting an existing plan?"
